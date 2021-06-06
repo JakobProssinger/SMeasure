@@ -6,8 +6,10 @@
 
 class induktiv_sensor
 {
-public:
+private:
   int Front_PIN, Back_PIN;
+public:
+  
   double frequency = 0;
   unsigned long FrontTime = 0, BackTime = 0, FrontTriggerCounter = 0, lastFrontTime = 0;
   unsigned long delta = 0;

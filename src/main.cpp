@@ -16,22 +16,18 @@
 const int Front_PIN=16; 
 const int Back_PIN=17; //TODO set corrrect pin from Eagle Board
 
-unsigned long FrontTime = 0, BackTime = 0, FrontTriggerCounter = 0, lastFrontTime;
-
-unsigned long delta = 0;
-double frequency = 0;
-
+induktiv_sensor *SensorRightWeel = new induktiv_sensor(Front_PIN, Back_PIN);
 
 void IRAM_ATTR onTimer_FrontSensor(){
-  FrontTriggerCounter++;
-  FrontTime = millis();
+  SensorRightWeel->FrontTriggerCounter++;
+  SensorRightWeel->FrontTime = millis();
 }
 
 void IRAM_ATTR onTimer_BackSensor() {
-  BackTime = millis();
+  SensorRightWeel->BackTime = millis();
 }
 
-induktiv_sensor *SensorRightWeel = new induktiv_sensor(Front_PIN, Back_PIN);
+
 String message = START;
 void setup() {  
     
@@ -43,17 +39,18 @@ void setup() {
 }
 
 void getRotation(induktiv_sensor* aSensor){
-    if(FrontTriggerCounter == 0)
-    {
-      aSensor->frequency = 0.0;
-      aSensor->direction = FORWARDS;
-      return;
-    }
+
 
     aSensor->delta = millis() - aSensor->lastFrontTime;
-    if((delta) >= 1000)
+    if(aSensor->delta >= 1000)
     {
-      aSensor->frequency = ((double) aSensor->FrontTriggerCounter / (double) delta) * 1000.0 ;  //Rotation frequency in 1/Second
+      if(aSensor->FrontTriggerCounter == 0)
+      {
+        aSensor->frequency = 0.0;
+        aSensor->direction = FORWARDS;
+        return;
+      }
+      aSensor->frequency = ((double) aSensor->FrontTriggerCounter / (double) aSensor->delta) * 1000.0 ;  //Rotation frequency in 1/Second
       if(aSensor->BackTime <= aSensor->FrontTime)
       {
         aSensor->direction = FORWARDS;
@@ -63,6 +60,7 @@ void getRotation(induktiv_sensor* aSensor){
       }
       aSensor->FrontTriggerCounter = 0;
       aSensor->lastFrontTime = aSensor->FrontTime;
+      aSensor->delta = 0;
     }
 }
 
@@ -75,6 +73,8 @@ void loop() {
     {
       //getGyro();
       getRotation(SensorRightWeel);
+      Serial.print("Frequency: ");
+      Serial.println(SensorRightWeel->frequency);
       /*
       if(Connection()){
         SendData();
