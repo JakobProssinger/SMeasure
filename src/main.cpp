@@ -12,6 +12,7 @@
 
 #include <Wire.h> //I2C 
 #include "SPIFFS.h" //Filesystem
+#include <MPU6050_light.h> // MPU6050
 
 #define START "START" //TODO set correct names for start and stop
 #define STOP "STOP"
@@ -37,18 +38,40 @@ void IRAM_ATTR onTimer_BackSensor()
 
 BluetoothSerial SerialBT;
 String message = STOP;
+volatile unsigned long BT_Time = 0;
+const unsigned long BT_INTERVALL = 1000; 
+
+
+volatile unsigned long MPU_Time = 0;
+const unsigned long MPU_INTERVALL = 1000;
+MPU6050 mpu(Wire);
+String GyroData = "";
 
 void setup() 
 {  
-    pinMode(Front_PIN, INPUT);
-    pinMode(Back_PIN, INPUT);
-    Serial.begin(115200);
+  Serial.begin(115200);
+  Wire.begin();
 
-    attachInterrupt(SensorRightWeel->Front_PIN, onTimer_FrontSensor, RISING);
-    attachInterrupt(SensorRightWeel->Back_PIN, onTimer_BackSensor, RISING);
+  byte MPUstatus = mpu.begin();
+  Serial.print(F("MPU6050 status: "));
+  Serial.println(MPUstatus);
+  while(MPUstatus!=0){ } // stop everything if could not connect to MPU6050
+  
+  Serial.println(F("Calculating offsets, do not move MPU6050"));
+  delay(1000);
+  //mpu.upsideDownMounting = true;
+  mpu.calcOffsets(true,true); // gyro and accelero
+  Serial.println("MPU6050 Setup Done!\n");
 
-    SerialBT.begin("ESP32test"); //Name des ESP32
-    delay(1000);
+  pinMode(Front_PIN, INPUT);
+  pinMode(Back_PIN, INPUT);
+
+  attachInterrupt(SensorRightWeel->Front_PIN, onTimer_FrontSensor, RISING);
+  attachInterrupt(SensorRightWeel->Back_PIN, onTimer_BackSensor, RISING);
+
+  SerialBT.begin("SMeasure"); //Name des ESP32
+  Serial.println("The device started, now you can pair it with bluetooth!");
+  delay(1000);
 }
 
 void getRotation(induktiv_sensor* aSensor)
@@ -78,27 +101,58 @@ void getRotation(induktiv_sensor* aSensor)
   }
 }
 
-String getBTInput(){
-  if(SerialBT.available()){
-      return SerialBT.readString();
+String getBTInput()
+{
+  if(SerialBT.available())
+  {
+    return SerialBT.readString();
   }
   return message;
 }
 
-bool test = true;
+String getGyro()
+{
+  if((millis() - MPU_Time) >= MPU_INTERVALL)
+  {
+    MPU_Time = millis();
+    mpu.update();
+    return "X=" +(String) mpu.getAngleX() + ", Y=" + (String)mpu.getAngleY() + ":";
+  }
+  return GyroData;
+}
+
+bool SendData(String aMessage)
+{
+  SerialBT.print(aMessage);
+  if(SerialBT.available())
+  {
+    SerialBT.print(aMessage);
+    return true;
+  } 
+  return false;
+}
+
 void loop() 
 {
   message = getBTInput();
   if(message == START)
   {
-    
+    SerialBT.println("In Action");
     while(message != STOP)
     {
-      //getGyro();
+      GyroData = getGyro();
       getRotation(SensorRightWeel);
 
-      if(SerialBT.available()){
-       // SendData();
+      if((millis() - BT_Time) >= BT_INTERVALL)
+      {
+        if(!SendData(GyroData))
+        {
+          //TODO Print in Error file
+        }
+        if(!SendData(", rotation=" + (String)SensorRightWeel->frequency)){ //TODO compatability for mobile APP
+          //Print in Error file
+        }
+        BT_Time = millis();
       }else {
        // StoreData();
       }
