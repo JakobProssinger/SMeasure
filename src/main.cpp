@@ -36,7 +36,7 @@ void IRAM_ATTR onTimer_BackSensor()
 }
 
 BluetoothSerial SerialBT;
-String message = START;
+String message = STOP;
 
 void setup() 
 {  
@@ -80,22 +80,22 @@ void getRotation(induktiv_sensor* aSensor)
 
 String getBTInput(){
   if(SerialBT.available()){
-      SerialBT.readString();
+      return SerialBT.readString();
   }
+  return message;
 }
 
+bool test = true;
 void loop() 
 {
-  message = SerialBT.readString();
-
+  message = getBTInput();
   if(message == START)
   {
+    
     while(message != STOP)
     {
       //getGyro();
       getRotation(SensorRightWeel);
-      Serial.print("Frequency: ");
-      Serial.println(SensorRightWeel->frequency);
 
       if(SerialBT.available()){
        // SendData();
