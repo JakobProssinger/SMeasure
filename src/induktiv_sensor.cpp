@@ -5,6 +5,8 @@
 
 induktiv_sensor::induktiv_sensor(int Front_PIN, int Back_PIN)
 {
+  this->Front_PIN = Front_PIN;
+  this->Back_PIN = Back_PIN;
   attachInterrupt(this->Front_PIN, ISR_Front, RISING);
   attachInterrupt(this->Back_PIN, ISR_Back, RISING);
 }

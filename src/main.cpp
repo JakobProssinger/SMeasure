@@ -4,6 +4,12 @@
 #include "../include/file_handling.hpp"
 
 
+#include "BluetoothSerial.h"
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+  #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
 #include <Wire.h> //I2C 
 #include "SPIFFS.h" //Filesystem
 
@@ -18,54 +24,69 @@ const int Back_PIN=17; //TODO set corrrect pin from Eagle Board
 
 induktiv_sensor *SensorRightWeel = new induktiv_sensor(Front_PIN, Back_PIN);
 
-void IRAM_ATTR onTimer_FrontSensor(){
+void IRAM_ATTR onTimer_FrontSensor()
+{
   SensorRightWeel->FrontTriggerCounter++;
   SensorRightWeel->FrontTime = millis();
 }
 
-void IRAM_ATTR onTimer_BackSensor() {
+void IRAM_ATTR onTimer_BackSensor() 
+{
   SensorRightWeel->BackTime = millis();
 }
 
-
+BluetoothSerial SerialBT;
 String message = START;
-void setup() {  
-    
+
+void setup() 
+{  
     pinMode(Front_PIN, INPUT);
     pinMode(Back_PIN, INPUT);
     Serial.begin(115200);
 
+    attachInterrupt(SensorRightWeel->Front_PIN, onTimer_FrontSensor, RISING);
+    attachInterrupt(SensorRightWeel->Back_PIN, onTimer_BackSensor, RISING);
+
+    SerialBT.begin("ESP32test"); //Name des ESP32
     delay(1000);
 }
 
-void getRotation(induktiv_sensor* aSensor){
-
-
-    aSensor->delta = millis() - aSensor->lastFrontTime;
-    if(aSensor->delta >= 1000)
+void getRotation(induktiv_sensor* aSensor)
+{
+  aSensor->FrontTime = millis();
+  aSensor->delta = aSensor->FrontTime - aSensor->lastFrontTime;
+  if(aSensor->delta >= 1000)
+  {
+    if(aSensor->FrontTriggerCounter == 0)
     {
-      if(aSensor->FrontTriggerCounter == 0)
-      {
-        aSensor->frequency = 0.0;
-        aSensor->direction = FORWARDS;
-        return;
-      }
-      aSensor->frequency = ((double) aSensor->FrontTriggerCounter / (double) aSensor->delta) * 1000.0 ;  //Rotation frequency in 1/Second
-      if(aSensor->BackTime <= aSensor->FrontTime)
-      {
-        aSensor->direction = FORWARDS;
-      } else 
-      {
-        aSensor->direction = BACKWARDS;
-      }
-      aSensor->FrontTriggerCounter = 0;
-      aSensor->lastFrontTime = aSensor->FrontTime;
-      aSensor->delta = 0;
+      aSensor->frequency = 0.0;
+      aSensor->direction = FORWARDS;
+      return;
     }
+    aSensor->frequency = ((double) aSensor->FrontTriggerCounter / (double) aSensor->delta) * 1000.0 ;  //Rotation frequency in 1/Second
+    if(aSensor->BackTime <= aSensor->FrontTime)
+    {
+      aSensor->direction = FORWARDS;
+    } else 
+    {
+      aSensor->direction = BACKWARDS;
+    }
+    aSensor->FrontTriggerCounter = 0;
+    aSensor->lastFrontTime = aSensor->FrontTime;
+    aSensor->delta = 0;
+
+  }
 }
 
-void loop() {
-  //message = getBTInput();
+String getBTInput(){
+  if(SerialBT.available()){
+      SerialBT.readString();
+  }
+}
+
+void loop() 
+{
+  message = SerialBT.readString();
 
   if(message == START)
   {
@@ -75,13 +96,13 @@ void loop() {
       getRotation(SensorRightWeel);
       Serial.print("Frequency: ");
       Serial.println(SensorRightWeel->frequency);
-      /*
-      if(Connection()){
-        SendData();
+
+      if(SerialBT.available()){
+       // SendData();
       }else {
-        StoreData();
+       // StoreData();
       }
-      message = getBTInput();*/
+      message = getBTInput();
     }
   }
 
