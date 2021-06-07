@@ -63,7 +63,7 @@ void getRotation(induktiv_sensor* aSensor)
       aSensor->direction = FORWARDS;
       return;
     }
-    aSensor->frequency = ((double) aSensor->FrontTriggerCounter / (double) aSensor->delta) * 1000.0 ;  //Rotation frequency in 1/Second
+    aSensor->frequency = ((double) aSensor->FrontTriggerCounter / (double) aSensor->delta) * 60000.0 ;  //Rotation frequency in 1/min
     if(aSensor->BackTime <= aSensor->FrontTime)
     {
       aSensor->direction = FORWARDS;
