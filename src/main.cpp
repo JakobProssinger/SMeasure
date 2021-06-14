@@ -115,7 +115,6 @@ String getGyro()
   if((millis() - MPU_Time) >= MPU_INTERVALL)
   {
     MPU_Time = millis();
-    mpu.update();
     return "X=" +(String) mpu.getAngleX() + ", Y=" + (String)mpu.getAngleY() + ":";
   }
   return GyroData;
@@ -134,12 +133,14 @@ bool SendData(String aMessage)
 
 void loop() 
 {
+  mpu.update();
   message = getBTInput();
   if(message == START)
   {
     SerialBT.println("In Action");
     while(message != STOP)
     {
+      mpu.update();
       GyroData = getGyro();
       getRotation(SensorRightWeel);
 
