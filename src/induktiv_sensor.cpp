@@ -3,13 +3,13 @@
 
 induktiv_sensor::induktiv_sensor(int FP, int BP, unsigned long MI)
 {
-  this->Front_PIN = FP;
-  this->Back_PIN = BP;
+  this->frontPIN = FP;
+  this->backPIN = BP;
   this->measureIntervallMS = MI;
 }
 
 induktiv_sensor::~induktiv_sensor()
 {
-  detachInterrupt(this->Front_PIN);
-  detachInterrupt(this->Back_PIN);
+  detachInterrupt(this->frontPIN);
+  detachInterrupt(this->backPIN);
 }

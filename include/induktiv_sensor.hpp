@@ -6,16 +6,18 @@
 
 #include <Arduino.h>
 #include <string.h>
+
 class induktiv_sensor
 {
 
 public:
-  int Front_PIN, Back_PIN;
+  int frontPIN, backPIN;
   double frequency = 0;
-  volatile unsigned long FrontTime = 0, BackTime = 0, FrontTriggerCounter = 0, lastFrontTime = 0;
+  volatile unsigned long frontTime = 0, backTime = 0, frontTriggerCounter = 0;
+  volatile unsigned long lastFrontTime = 0;
   unsigned long delta = 0;
   unsigned long measureIntervallMS;
-  bool direction = FORWARDS;
+  bool direction;
   induktiv_sensor(int, int, unsigned long);
   ~induktiv_sensor();
   void (*ISR_Front)(void);

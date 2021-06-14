@@ -14,21 +14,21 @@
 #define START "START"
 #define STOP "STOP"
 
-const int Front_PIN = 16;
-const int Back_PIN = 17;
+const int frontPIN = 16;
+const int backPIN = 17;
 unsigned long aIntervall = 1000;
 
-induktiv_sensor *SensorRightWheel = new induktiv_sensor(Front_PIN, Back_PIN, aIntervall);
+induktiv_sensor *SensorRightWheel = new induktiv_sensor(frontPIN, backPIN, aIntervall);
 
 void IRAM_ATTR onTimer_FrontSensor()
 {
-  SensorRightWheel->FrontTriggerCounter++;
-  SensorRightWheel->FrontTime = millis();
+  SensorRightWheel->frontTriggerCounter++;
+  SensorRightWheel->frontTime = millis();
 }
 
 void IRAM_ATTR onTimer_BackSensor()
 {
-  SensorRightWheel->BackTime = millis();
+  SensorRightWheel->backTime = millis();
 }
 
 BluetoothSerial SerialBT;
@@ -60,11 +60,11 @@ void setup()
   mpu.calcOffsets(true, true); // gyro and accelero
   Serial.println("MPU6050 Setup Done!\n");
 
-  pinMode(Front_PIN, INPUT);
-  pinMode(Back_PIN, INPUT);
+  pinMode(frontPIN, INPUT);
+  pinMode(backPIN, INPUT);
 
-  attachInterrupt(SensorRightWheel->Front_PIN, onTimer_FrontSensor, FALLING);
-  attachInterrupt(SensorRightWheel->Back_PIN, onTimer_BackSensor, FALLING);
+  attachInterrupt(SensorRightWheel->frontPIN, onTimer_FrontSensor, FALLING);
+  attachInterrupt(SensorRightWheel->backPIN, onTimer_BackSensor, FALLING);
 
   SerialBT.begin("SMeasure"); //Name des ESP32
   Serial.println("The device started, now you can pair it with bluetooth!");
@@ -77,10 +77,10 @@ void getRotation(induktiv_sensor *aSensor)
   noInterrupts();
   if (aSensor->delta >= aSensor->measureIntervallMS)
   {
-    aSensor->frequency = ((double)aSensor->FrontTriggerCounter / (double)aSensor->delta) * 1000.0; //Rotation frequency in 1/s
+    aSensor->frequency = ((double)aSensor->frontTriggerCounter / (double)aSensor->delta) * 1000.0; //Rotation frequency in 1/s
     
     BT_Time = millis();
-    if (aSensor->BackTime < aSensor->FrontTime)
+    if (aSensor->backTime < aSensor->frontTime)
     {
       aSensor->direction = FORWARDS;
     }
@@ -88,9 +88,12 @@ void getRotation(induktiv_sensor *aSensor)
     {
       aSensor->direction = BACKWARDS;
     }
-    aSensor->FrontTriggerCounter = 0;
-    aSensor->lastFrontTime = aSensor->FrontTime;
+    aSensor->frontTriggerCounter = 0;
+    aSensor->lastFrontTime = aSensor->frontTime;
     aSensor->delta = 0;
+    Serial.println("B: " + (String)SensorRightWheel->backTime + " |F: " + (String)SensorRightWheel->frontTime 
+    + " |D: " + SensorRightWheel->direction + " | " + (String)(SensorRightWheel->frontTime -SensorRightWheel->backTime ));
+    
   }
   interrupts()
 }
