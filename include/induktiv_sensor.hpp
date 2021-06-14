@@ -1,9 +1,11 @@
 #ifndef INDUKTKIV_SENSOR_HPP
 #define INDUKTKIV_SENSOR_HPP
 
-#define FORWARDS true;
-#define BACKWARDS false;
+#define FORWARDS true
+#define BACKWARDS false
 
+#include <Arduino.h>
+#include <string.h>
 class induktiv_sensor
 {
 
