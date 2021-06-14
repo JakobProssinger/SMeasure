@@ -16,7 +16,7 @@
 
 const int Front_PIN = 16;
 const int Back_PIN = 17;
-unsigned long aIntervall = 100;
+unsigned long aIntervall = 1000;
 
 induktiv_sensor *SensorRightWheel = new induktiv_sensor(Front_PIN, Back_PIN, aIntervall);
 
@@ -74,10 +74,12 @@ void setup()
 void getRotation(induktiv_sensor *aSensor)
 {
   aSensor->delta = millis() - aSensor->lastFrontTime;
+  noInterrupts();
   if (aSensor->delta >= aSensor->measureIntervallMS)
   {
     aSensor->frequency = ((double)aSensor->FrontTriggerCounter / (double)aSensor->delta) * 1000.0; //Rotation frequency in 1/s
-
+    
+    BT_Time = millis();
     if (aSensor->BackTime < aSensor->FrontTime)
     {
       aSensor->direction = FORWARDS;
@@ -90,6 +92,7 @@ void getRotation(induktiv_sensor *aSensor)
     aSensor->lastFrontTime = aSensor->FrontTime;
     aSensor->delta = 0;
   }
+  interrupts()
 }
 
 String getBTInput()
