@@ -14,8 +14,9 @@ public:
   double frequency = 0;
   volatile unsigned long FrontTime = 0, BackTime = 0, FrontTriggerCounter = 0, lastFrontTime = 0;
   unsigned long delta = 0;
+  unsigned long measureIntervallMS;
   bool direction = FORWARDS;
-  induktiv_sensor(int, int);
+  induktiv_sensor(int, int, unsigned long);
   ~induktiv_sensor();
   void (*ISR_Front)(void);
   void (*ISR_Back)(void);

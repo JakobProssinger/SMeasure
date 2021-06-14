@@ -16,8 +16,9 @@
 
 const int Front_PIN = 16;
 const int Back_PIN = 17;
+unsigned long aIntervall = 100;
 
-induktiv_sensor *SensorRightWheel = new induktiv_sensor(Front_PIN, Back_PIN);
+induktiv_sensor *SensorRightWheel = new induktiv_sensor(Front_PIN, Back_PIN, aIntervall);
 
 void IRAM_ATTR onTimer_FrontSensor()
 {
@@ -31,7 +32,7 @@ void IRAM_ATTR onTimer_BackSensor()
 }
 
 BluetoothSerial SerialBT;
-String message = STOP;
+String message = START;
 volatile unsigned long BT_Time = 0;
 const unsigned long BT_INTERVALL = 1000;
 
@@ -72,19 +73,12 @@ void setup()
 
 void getRotation(induktiv_sensor *aSensor)
 {
-  aSensor->FrontTime = millis();
-  aSensor->delta = aSensor->FrontTime - aSensor->lastFrontTime;
-  if (aSensor->delta >= 1000)
+  aSensor->delta = millis() - aSensor->lastFrontTime;
+  if (aSensor->delta >= aSensor->measureIntervallMS)
   {
-    if (aSensor->FrontTriggerCounter == 0)
-    {
-      aSensor->frequency = 0.0;
-      aSensor->direction = FORWARDS;
-      return;
-    }
     aSensor->frequency = ((double)aSensor->FrontTriggerCounter / (double)aSensor->delta) * 1000.0; //Rotation frequency in 1/s
 
-    if (aSensor->BackTime <= aSensor->FrontTime)
+    if (aSensor->BackTime < aSensor->FrontTime)
     {
       aSensor->direction = FORWARDS;
     }
@@ -152,7 +146,6 @@ void loop()
         {
           //TODOPrint in Error file
         }
-        BT_Time = millis();
       }
       else
       {
