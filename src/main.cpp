@@ -11,8 +11,8 @@
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
-#define START "START"
-#define STOP "STOP"
+#define START "start"
+#define STOP "stop"
 
 const int frontPIN = 16;
 const int backPIN = 17;
@@ -32,7 +32,7 @@ void IRAM_ATTR onTimer_BackSensor()
 }
 
 BluetoothSerial SerialBT;
-String message = START;
+String message = START; //TDOO set to STOP
 volatile unsigned long BT_Time = 0;
 const unsigned long BT_INTERVALL = 1000;
 
@@ -79,7 +79,6 @@ void getRotation(induktiv_sensor *aSensor)
   {
     aSensor->frequency = ((double)aSensor->frontTriggerCounter / (double)aSensor->delta) * 1000.0; //Rotation frequency in 1/s
     
-    BT_Time = millis();
     if (aSensor->backTime < aSensor->frontTime)
     {
       aSensor->direction = FORWARDS;
@@ -91,9 +90,7 @@ void getRotation(induktiv_sensor *aSensor)
     aSensor->frontTriggerCounter = 0;
     aSensor->lastFrontTime = aSensor->frontTime;
     aSensor->delta = 0;
-    Serial.println("B: " + (String)SensorRightWheel->backTime + " |F: " + (String)SensorRightWheel->frontTime 
-    + " |D: " + SensorRightWheel->direction + " | " + (String)(SensorRightWheel->frontTime -SensorRightWheel->backTime ));
-    
+    //Serial.println("B: " + (String)SensorRightWheel->backTime + " |F: " + (String)SensorRightWheel->frontTime + " |D: " + SensorRightWheel->direction + " | " + (String)(SensorRightWheel->frontTime - SensorRightWheel->backTime));
   }
   interrupts()
 }
@@ -102,7 +99,7 @@ String getBTInput()
 {
   if (SerialBT.available())
   {
-    return SerialBT.readString();
+    return SerialBT.readStringUntil('\n');
   }
   return message;
 }
@@ -112,7 +109,7 @@ String getGyro()
   if ((millis() - MPU_Time) >= MPU_INTERVALL)
   {
     MPU_Time = millis();
-    return "X=" + (String)mpu.getAngleX() + ", Y=" + (String)mpu.getAngleY() + ":";
+    return "Pitch, Roll = " + (String)mpu.getAngleX() + "  " + (String)mpu.getAngleY() + " || ";
   }
   return GyroData;
 }
@@ -122,7 +119,7 @@ bool SendData(String aMessage)
   SerialBT.print(aMessage);
   if (SerialBT.available())
   {
-    SerialBT.println(aMessage);
+    SerialBT.print(aMessage);
     return true;
   }
   return false;
@@ -131,10 +128,9 @@ bool SendData(String aMessage)
 void loop()
 {
   mpu.update();
-  message = getBTInput();
+  message = getBTInput();  
   if (message == START)
   {
-    SerialBT.println("In Action");
     while (message != STOP)
     {
       mpu.update();
@@ -143,22 +139,22 @@ void loop()
 
       if ((millis() - BT_Time) >= BT_INTERVALL)
       {
-        if (!SendData(GyroData))
-        {
-          //TODO Print in Error file
-        }
-        if (!SendData(", rotation=" + (String)SensorRightWheel->frequency +
-                      ", direction=" + (String)SensorRightWheel->direction))
+        if (!SendData(GyroData+ " Frequenz = " + (String)SensorRightWheel->frequency + ":"))
         {
           //TODOPrint in Error file
+          Serial.println("ERROR ");
         }
+         BT_Time = millis();
       }
       else
       {
         // StoreData();
       }
+      
       message = getBTInput();
+      
     }
+    SerialBT.println("\n");
   }
 
   delay(20);
