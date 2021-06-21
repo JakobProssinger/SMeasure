@@ -36,8 +36,6 @@ String message = START; //TDOO set to STOP
 volatile unsigned long BT_Time = 0;
 const unsigned long BT_INTERVALL = 1000;
 
-volatile unsigned long MPU_Time = 0;
-const unsigned long MPU_INTERVALL = 1000;
 MPU6050 mpu(Wire);
 String GyroData = "";
 
@@ -90,7 +88,6 @@ void getRotation(induktiv_sensor *aSensor)
     aSensor->frontTriggerCounter = 0;
     aSensor->lastFrontTime = aSensor->frontTime;
     aSensor->delta = 0;
-    //Serial.println("B: " + (String)SensorRightWheel->backTime + " |F: " + (String)SensorRightWheel->frontTime + " |D: " + SensorRightWheel->direction + " | " + (String)(SensorRightWheel->frontTime - SensorRightWheel->backTime));
   }
   interrupts()
 }
@@ -101,23 +98,18 @@ String getBTInput()
   {
     return SerialBT.readStringUntil('\n');
   }
-  return message;
+  return "";
 }
 
-String getGyro()
+String GyroToString()
 {
-  if ((millis() - MPU_Time) >= MPU_INTERVALL)
-  {
-    MPU_Time = millis();
-    return "Pitch, Roll = " + (String)mpu.getAngleX() + "  " + (String)mpu.getAngleY() + " || ";
-  }
-  return GyroData;
+  return "Pitch, Roll = " + (String)mpu.getAngleX() + "  " + (String)mpu.getAngleY() + " || ";
 }
 
 bool SendData(String aMessage)
 {
   SerialBT.print(aMessage);
-  if (SerialBT.available())
+  if (SerialBT.hasClient())
   {
     SerialBT.print(aMessage);
     return true;
@@ -134,12 +126,10 @@ void loop()
     while (message != STOP)
     {
       mpu.update();
-      GyroData = getGyro();
-      getRotation(SensorRightWheel);
-
-      if ((millis() - BT_Time) >= BT_INTERVALL)
+      if ((millis() - BT_Time) >= BT_INTERVALL)   
       {
-        if (!SendData(GyroData+ " Frequenz = " + (String)SensorRightWheel->frequency + ":"))
+        getRotation(SensorRightWheel);
+        if (!SendData(GyroToString() + " Frequenz = " + (String)SensorRightWheel->frequency + ":"))
         {
           //TODOPrint in Error file
           Serial.println("ERROR ");
