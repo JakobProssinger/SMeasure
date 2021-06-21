@@ -15,18 +15,30 @@
 #define STOP "stop"
 
 const int frontPIN = 16;
+const int centerPIN = 4;
 const int backPIN = 17;
 unsigned long aIntervall = 1000;
 
-induktiv_sensor *SensorRightWheel = new induktiv_sensor(frontPIN, backPIN, aIntervall);
+induktiv_sensor *SensorRightWheel = new induktiv_sensor(frontPIN, centerPIN, backPIN, aIntervall);
 
-void IRAM_ATTR onTimer_FrontSensor()
+void IRAM_ATTR ExternalFrontSensor()
 {
   SensorRightWheel->frontTriggerCounter++;
   SensorRightWheel->frontTime = millis();
 }
 
-void IRAM_ATTR onTimer_BackSensor()
+void IRAM_ATTR ExternalCenterSensor()
+{
+  if (SensorRightWheel->frontTime > SensorRightWheel->backTime)
+  {
+    SensorRightWheel->direction = FORWARDS;
+  }
+  else
+  {
+    SensorRightWheel->direction = BACKWARDS;
+  }
+}
+void IRAM_ATTR ExternalBackSensor()
 {
   SensorRightWheel->backTime = millis();
 }
@@ -61,8 +73,9 @@ void setup()
   pinMode(frontPIN, INPUT);
   pinMode(backPIN, INPUT);
 
-  attachInterrupt(SensorRightWheel->frontPIN, onTimer_FrontSensor, FALLING);
-  attachInterrupt(SensorRightWheel->backPIN, onTimer_BackSensor, FALLING);
+  attachInterrupt(SensorRightWheel->frontPIN, ExternalFrontSensor, FALLING);
+  attachInterrupt(SensorRightWheel->centerPin, ExternalCenterSensor, FALLING);
+  attachInterrupt(SensorRightWheel->backPIN, ExternalBackSensor, FALLING);
 
   SerialBT.begin("SMeasure"); //Name des ESP32
   Serial.println("The device started, now you can pair it with bluetooth!");
@@ -76,15 +89,6 @@ void getRotation(induktiv_sensor *aSensor)
   if (aSensor->delta >= aSensor->measureIntervallMS)
   {
     aSensor->frequency = ((double)aSensor->frontTriggerCounter / (double)aSensor->delta) * 1000.0; //Rotation frequency in 1/s
-
-    if (aSensor->backTime < aSensor->frontTime)
-    {
-      aSensor->direction = FORWARDS;
-    }
-    else
-    {
-      aSensor->direction = BACKWARDS;
-    }
     aSensor->frontTriggerCounter = 0;
     aSensor->lastFrontTime = aSensor->frontTime;
     aSensor->delta = 0;
