@@ -76,7 +76,7 @@ void getRotation(induktiv_sensor *aSensor)
   if (aSensor->delta >= aSensor->measureIntervallMS)
   {
     aSensor->frequency = ((double)aSensor->frontTriggerCounter / (double)aSensor->delta) * 1000.0; //Rotation frequency in 1/s
-    
+
     if (aSensor->backTime < aSensor->frontTime)
     {
       aSensor->direction = FORWARDS;
@@ -120,13 +120,13 @@ bool SendData(String aMessage)
 void loop()
 {
   mpu.update();
-  message = getBTInput();  
+  message = getBTInput();
   if (message == START)
   {
     while (message != STOP)
     {
       mpu.update();
-      if ((millis() - BT_Time) >= BT_INTERVALL)   
+      if ((millis() - BT_Time) >= BT_INTERVALL)
       {
         getRotation(SensorRightWheel);
         if (!SendData(GyroToString() + " Frequenz = " + (String)SensorRightWheel->frequency + ":"))
@@ -134,15 +134,11 @@ void loop()
           //TODOPrint in Error file
           Serial.println("ERROR ");
         }
-         BT_Time = millis();
+        BT_Time = millis();
       }
-      else
-      {
-        // StoreData();
-      }
-      
+
+      // StoreData();
       message = getBTInput();
-      
     }
     SerialBT.println("\n");
   }
